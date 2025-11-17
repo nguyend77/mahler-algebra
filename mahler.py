@@ -1,3 +1,5 @@
+import numpy as np
+
 class Mahler: # {m: coeff}
     def __init__(self, terms):
         self.terms = {m: coeff for m, coeff in terms.items() if coeff != 0}
@@ -63,6 +65,20 @@ class Mahler: # {m: coeff}
         for m, coeff in self.terms.items():
             result += coeff * f.subs({x: x**m})
         return result
+    
+def solve_congruence(alpha, beta, d): # find gamma s.t. alpha*gamma \equiv beta (mod d)
+    A = np.zeros((d,d)) # d*d matrix with column i is the vector of coefficients from (alpha*[i])%d
+    for i in range(d): # column index, representing the [i] associated with gamma_i
+        for m_a, coeff_a in alpha.terms.items():
+            j = (m_a*i) % d
+            A[j][i] += coeff_a
+    b = np.zeros(d) # vector of coefficients from b reduced modular d
+    for m_b, coeff_b in (beta%d).terms.items():
+        b[m_b] = coeff_b
+    x = np.round(np.linalg.solve(A, b)).astype(int)
+    if np.allclose(A @ x, b):
+        gamma_terms = {i: x[i] for i in range(d) if x[i] != 0}
+        return Mahler(gamma_terms)
         
 def moebius_py(n):
     if n == 1:
