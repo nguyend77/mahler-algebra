@@ -1,4 +1,4 @@
-import numpy as np
+from sympy import Matrix, zeros
 
 class Mahler: # {m: coeff}
     def __init__(self, terms):
@@ -67,18 +67,25 @@ class Mahler: # {m: coeff}
         return result
     
 def solve_congruence(alpha, beta, d): # find gamma s.t. alpha*gamma \equiv beta (mod d)
-    A = np.zeros((d,d)) # d*d matrix with column i is the vector of coefficients from (alpha*[i])%d
+    A = zeros(d,d) # d*d matrix with column i is the vector of coefficients from (alpha*[i])%d
     for i in range(d): # column index, representing the [i] associated with gamma_i
         for m_a, coeff_a in alpha.terms.items():
             j = (m_a*i) % d
-            A[j][i] += coeff_a
-    b = np.zeros(d) # vector of coefficients from b reduced modular d
+            A[j,i] += coeff_a
+    b = zeros(d, 1) # vector of coefficients from b reduced modular d
     for m_b, coeff_b in (beta%d).terms.items():
-        b[m_b] = coeff_b
-    x = np.round(np.linalg.solve(A, b)).astype(int)
-    if np.allclose(A @ x, b): # check for potential float rounding errors
-        gamma_terms = {i: x[i] for i in range(d) if x[i] != 0}
-        return Mahler(gamma_terms)
+        b[m_b,0] = coeff_b
+    Ab = Matrix.hstack(A,b) # augmented matrix
+    rref_matrix = Ab.rref()[0]
+    for i in range(rref_matrix.rows):
+        A_part = rref_matrix[i, 0:d]
+        b_part = rref_matrix[i, d]
+        if all(val == 0 for val in A_part) and b_part != 0:
+            return False # inconsistent system
+    for val in rref_matrix:
+        if not val.is_Integer:
+            return False # solution exists, but not integer
+    return True
         
 def moebius_py(n):
     if n == 1:
