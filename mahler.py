@@ -25,7 +25,7 @@ class Mahler: # {m: coeff}
                     parts.append(f'{coeff:+} [{m}]')
         return ' '.join(parts)
     def __eq__(self, other): # equality check with ==
-        if isinstance(other, int) and other == 0:
+        if other == 0:
             return not self.terms
         return self.terms == other.terms
     def __add__(self, other): # addition with +
@@ -76,7 +76,7 @@ def solve_congruence(alpha, beta, d): # find gamma s.t. alpha*gamma \equiv beta 
     for m_b, coeff_b in (beta%d).terms.items():
         b[m_b] = coeff_b
     x = np.round(np.linalg.solve(A, b)).astype(int)
-    if np.allclose(A @ x, b):
+    if np.allclose(A @ x, b): # check for potential float rounding errors
         gamma_terms = {i: x[i] for i in range(d) if x[i] != 0}
         return Mahler(gamma_terms)
         
