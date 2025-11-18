@@ -1,4 +1,6 @@
 from sympy import Matrix, zeros
+from math import lcm as math_lcm
+from math import gcd as math_gcd
 
 class Mahler: # {m: coeff}
     def __init__(self, terms):
@@ -66,7 +68,7 @@ class Mahler: # {m: coeff}
             result += coeff * f.subs({x: x**m})
         return result
     
-def solve_congruence(alpha, beta, d): # find gamma s.t. alpha*gamma \equiv beta (mod d)
+def solve_congruence(alpha, beta, d): # check if there exists interger solution to alpha*gamma \equiv beta (mod d)
     A = zeros(d,d) # d*d matrix with column i is the vector of coefficients from (alpha*[i])%d
     for i in range(d): # column index, representing the [i] associated with gamma_i
         for m_a, coeff_a in alpha.terms.items():
@@ -76,15 +78,24 @@ def solve_congruence(alpha, beta, d): # find gamma s.t. alpha*gamma \equiv beta 
     for m_b, coeff_b in (beta%d).terms.items():
         b[m_b,0] = coeff_b
     Ab = Matrix.hstack(A,b) # augmented matrix
-    rref_matrix = Ab.rref()[0]
+    rref_matrix = Ab.echelon_form()
     for i in range(rref_matrix.rows):
-        A_part = rref_matrix[i, 0:d]
-        b_part = rref_matrix[i, d]
-        if all(val == 0 for val in A_part) and b_part != 0:
-            return False # inconsistent system
-    for val in rref_matrix:
-        if not val.is_Integer:
-            return False # solution exists, but not integer
+        row = rref_matrix.row(i)
+        denominators = [entry.q for entry in row]
+        denominators_LCM = 1
+        for val in denominators:
+            denominators_LCM = math_lcm(denominators_LCM, val)
+        int_row = [val * denominators_LCM for val in row] # multiply all entries by lcm of denominators
+        coeffs = int_row[0:d]
+        b_val = int_row[d]
+        if all(c == 0 for c in coeffs):
+            if b_val == 0:
+                continue # trivial
+            else:
+                return False # inconsistent system
+        g = math_gcd(*coeffs)
+        if b_val % g != 0: # linear Diophantine equation has no integer solution
+            return False
     return True
         
 def moebius_py(n):
